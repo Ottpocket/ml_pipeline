@@ -1,5 +1,5 @@
-# Jan2023
-Group's private Jan 2023 code repo
+# Kaggle Tabular
+Group's private Code Repo for Tabular Competitions
 
 ## Ideas to try
 
