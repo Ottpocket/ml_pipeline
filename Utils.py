@@ -1,6 +1,136 @@
 import numpy as np 
 import pandas as pd 
-import os
+
+def likelihood_encoding(train, cat_col, encoding_cols, stats=['mean'], num_folds=5, test=None):
+    '''
+    Uses N-fold likelihood encoding to encode the categorical
+    variable with the encoding_col's info.
+    NOTE: This is inplace
+    NOTE: indices for train and test must be 0-(nrows-1) or throws exception
+    WARNING: for `count` statistic, use num_folds=1
+    
+    ARGUMENTS
+    -----------------
+    train: (pd.DataFrame)
+    cat_col: (str) the name of the categorical column to be encoded.  
+    encoding_cols: (list of str) the name of the column to be encoded.
+    stats: (list of str) the statistic of the encoding_col to impute to the cat_col.
+            NOTE: can include any `stat` compatable with df.agg({col:`stat`})
+    num_folds: (int) number of folds to use for the encoding
+    test: (pd.DataFrame) optional.  Encodes test data
+    
+    OUTPUT
+    -------------------
+    creates columns cat_col_stat1_encoding_col1, ... , cat_col_statM_encoding_colN
+    for the newly created encoded columns
+    '''
+    if type(train.index) is not pd.core.indexes.range.RangeIndex:
+        error = f'''\ntrain must have a RangeIndex from 0 to {train.shape[0] -1}.
+        \ntrain's index is instead {type(train.index)}.'''
+        raise Exception(error)
+    if test is not None:
+        if type(test.index) is not pd.core.indexes.range.RangeIndex:
+            error = f'''\ntest must have a RangeIndex from 0 to {test.shape[0]-1}.
+            \ntest's index is instead {type(test.index)}.'''
+            raise Exception(error)
+    if cat_col in encoding_cols:
+        raise Exception(f'{cat_col} found in encoding cols.')
+    if 'count' in stats:
+        warning = f'''`count` found in stats.  To prevent redundancies, 
+        the count encoded column will be labelled as `{cat_col}_count_`'''
+        print(warning)
+        count_flag =True
+        stats.remove('count')
+    else:
+        count_flag = False
+    
+    
+    #Getting the correct aggregation dict for the groupby.agg(dict) 
+    agg_dict = {}
+    for encoding_col in encoding_cols:
+        agg_dict[encoding_col] = stats
+    upcaster = Upcaster(train) #upcasts data to prevent overflow
+    upcaster.upcast(train, encoding_cols)
+    
+    def get_le_cols(train_df, new_df, agg_dict=agg_dict, cat_col=cat_col, train_idx=None, test_idx=None):
+        '''
+        train_df: (pd.DataFrame) df which has the raw features for statistics
+        new_df: (pd.DataFrame) df which has statistics applied to it
+        '''
+        #use all indices if no subset provided
+        if train_idx is None:
+            train_idx = range(len(train_df)) 
+        if test_idx is None:
+            test_idx = range(len(new_df))
+
+        agg = train_df.iloc[train_idx].groupby(cat_col).agg(agg_dict)
+        reduce_mem_usage(agg)
+        agg.columns = [f'{cat_col}_{tup[1]}_{tup[0]}' for tup in agg.columns]
+        new_cols = new_df[[cat_col]].iloc[test_idx].merge(agg, on=cat_col, how='left')
+        del new_cols[cat_col]
+
+        #Mean impute NA values
+        for col in agg.columns:
+            nan_msk = new_cols[col].isnull()
+            if np.sum(nan_msk) >0:
+                print(f'Imputing {col} for train')
+                stat_feat = col.split(cat_col)[-1].split('_')
+                statistic = stat_feat[1]
+                feat_col = '_'.join(stat_feat[2:])
+                if statistic != 'count':
+                    new_cols.loc[nan_msk, col] = train[feat_col].agg(statistic)
+                else:
+                    new_cols.loc[nan_msk, col] = 0
+
+        new_cols.index = test_idx
+        return new_cols
+    
+    #######################
+    #Train le
+    #######################
+    if num_folds == 1:
+        new_features = get_le_cols(train_df = train, new_df = train)
+    
+    else:
+        #Kfold splitting to prevent leakage
+        skf = StratifiedKFold(n_splits=num_folds, shuffle=True, random_state=42)
+        new_feature_list = []
+        for i, (train_idx, test_idx) in enumerate(skf.split(train, train[cat_col])):
+            new_cols = get_le_cols(train_df = train, new_df = train, 
+                                   agg_dict=agg_dict, cat_col=cat_col, 
+                                   train_idx=train_idx, test_idx=test_idx)
+            new_feature_list.append(new_cols)
+
+
+        new_features = pd.concat(new_feature_list)
+        new_features.sort_index(inplace=True)
+
+    for feat in new_features.columns:
+        train[feat] = new_features[feat]
+        
+    #######################
+    #test le
+    #######################
+    if test is not None:
+        new_features = get_le_cols(train_df = train, new_df = test)
+        for feat in new_features.columns:
+            test[feat] = new_features[feat]
+    
+    #######################
+    #count stat loose ends
+    #######################
+    if count_flag:
+        count_col_name = f'{cat_col}_count_'
+        count_dict = {encoding_cols[0]: ['count']}
+        
+        new_features = get_le_cols(train_df = train, new_df = train, agg_dict=count_dict)
+        created_col_name = new_features.columns[0]
+        train[count_col_name] = new_features[created_col_name]
+        
+        if test is not None:
+            new_features = get_le_cols(train_df = train, new_df = test, agg_dict=count_dict)
+            test[count_col_name] = new_features[created_col_name]
+    upcaster.revert(train)#downcasts data to original dtype
 
 def reduce_mem_usage(df, verbose=False):
     """ 
@@ -85,3 +215,42 @@ def to_bin(df, num_bins, binned_features, test = None):
         df[f'{feat}_bin'] = pd.cut(df[feat], bins, labels=False, include_lowest=True)
         if test is not None:
             test[f'{feat}_bin'] = pd.cut(test[feat], bins, labels=False, include_lowest=True)
+
+            
+class Upcaster:
+    '''
+    Upcasts columns and can revert to original state
+    '''
+    def __init__(self, df):
+        self.dtype_dict = {}
+        for col in df:
+            self.dtype_dict[col] = df[col].dtype.name
+        self.cols = None
+    
+    def upcast(self, df, cols):
+        '''
+        cols: (list of col names) columns to be upcasted
+        '''
+        for col in cols:
+            if col not in self.dtype_dict.keys():
+                raise exception(f'{col} not found in dtype dictionary.')
+            
+            if 'float' in self.dtype_dict[col]:
+                if df[col].dtype.name != 'float64':
+                    df[col] = df[col].astype('float64')
+            elif 'int' in self.dtype_dict[col]:
+                if df[col].dtype.name != 'int64':
+                    df[col] = df[col].astype('int64')
+            else:
+                raise exception(f'{col} is neither `int` nor `float`.  It is {df[col].dtype.name}.')
+        self.cols= cols
+        
+    def revert(self, df):
+        if self.cols is None:
+            raise Exception(f'No columns to revert.  Must call upcast method before reverting.')
+        
+        for col in self.cols:
+            if col in ['int64', 'float64']:
+                pass
+            else:
+                df[col] = df[col].astype(self.dtype_dict[col])
