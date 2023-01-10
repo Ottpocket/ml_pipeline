@@ -22,8 +22,9 @@ def likelihood_encoding(train, cat_col, encoding_cols, stats=['mean'], num_folds
     
     OUTPUT
     -------------------
-    creates columns cat_col_stat1_encoding_col1, ... , cat_col_statM_encoding_colN
-    for the newly created encoded columns
+    outputs a list of the names of the new columns
+    NOTE: The new columns are already inplace added to the train (and test if specified)
+    data.  The new columns are called cat_col_stat1_encoding_col1, ... , cat_col_statM_encoding_colN
     '''
     if type(train.index) is not pd.core.indexes.range.RangeIndex:
         error = f'''\ntrain must have a RangeIndex from 0 to {train.shape[0] -1}.
@@ -108,7 +109,8 @@ def likelihood_encoding(train, cat_col, encoding_cols, stats=['mean'], num_folds
 
     for feat in new_features.columns:
         train[feat] = new_features[feat]
-        
+    le_col_names = new_features.columns
+    
     #######################
     #test le
     #######################
@@ -127,12 +129,14 @@ def likelihood_encoding(train, cat_col, encoding_cols, stats=['mean'], num_folds
         new_features = get_le_cols(train_df = train, new_df = train, agg_dict=count_dict)
         created_col_name = new_features.columns[0]
         train[count_col_name] = new_features[created_col_name]
+        le_col_names.append(count_col_name)
         
         if test is not None:
             new_features = get_le_cols(train_df = train, new_df = test, agg_dict=count_dict)
             test[count_col_name] = new_features[created_col_name]
     upcaster.revert(train)#downcasts data to original dtype
-
+    return le_col_names
+    
 def reduce_mem_usage(df, verbose=False):
     """ 
     copy pastaed from https://www.kaggle.com/code/gemartin/load-data-reduce-memory-usage/notebook.
