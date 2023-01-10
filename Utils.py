@@ -75,7 +75,6 @@ def likelihood_encoding(train, cat_col, encoding_cols, stats=['mean'], num_folds
         for col in agg.columns:
             nan_msk = new_cols[col].isnull()
             if np.sum(nan_msk) >0:
-                print(f'Imputing {col} for train')
                 stat_feat = col.split(cat_col)[-1].split('_')
                 statistic = stat_feat[1]
                 feat_col = '_'.join(stat_feat[2:])
