@@ -258,3 +258,34 @@ class Upcaster:
                 pass
             else:
                 df[col] = df[col].astype(self.dtype_dict[col])
+
+def xval(feats, train, metric, model, n_splits=5, test=None, extra = None, verbose=False):
+    '''
+    Crossvalidates the data.  If test data provided, gives the test predictions
+    averaged across folds.  
+    If extra data given, it adds the extra data for each fold.
+    '''
+    scores=[]
+    kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+    if verbose:
+        print(f'5: ',end='')
+    for i, (train_idx, test_idx) in enumerate(kf.split(train)):
+        if verbose:
+            print(f'{i+1},',end='')
+        if extra is None:
+            model.fit(train[feats].iloc[train_idx], train[TARGET].iloc[train_idx])
+        else:
+            temp_tr = pd.concat([train[feats].iloc[train_idx], extra[feats]])
+            temp_targ = pd.concat([train[TARGET].iloc[train_idx], extra[TARGET]])
+            model.fit(temp_tr, temp_targ)
+        
+        preds = model.predict(train[feats].iloc[test_idx])
+        scores.append(metric(train[TARGET].iloc[test_idx], preds))
+        if test is not None:
+            ss[TARGET] += model.predict(test[feats]) / n_splits
+    
+    if verbose:
+        print()
+        print(scores)
+        print(np.mean(scores))
+    return np.mean(scores)
