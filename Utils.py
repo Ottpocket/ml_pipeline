@@ -1,6 +1,6 @@
 import numpy as np 
 import pandas as pd 
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, KFold
 
 def likelihood_encoding(train, cat_col, encoding_cols, stats=['mean'], num_folds=5, test=None):
     '''
