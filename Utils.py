@@ -134,7 +134,7 @@ def likelihood_encoding(train, cat_col, encoding_cols, stats=['mean'], num_folds
             new_features = get_le_cols(train_df = train, new_df = test, agg_dict=count_dict)
             test[count_col_name] = new_features[created_col_name]
     upcaster.revert(train)#downcasts data to original dtype
-    return le_col_names
+    return list(le_col_names)
     
 def reduce_mem_usage(df, verbose=False):
     """ 
