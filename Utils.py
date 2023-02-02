@@ -136,7 +136,7 @@ def likelihood_encoding(train, cat_col, encoding_cols, stats=['mean'], num_folds
     upcaster.revert(train)#downcasts data to original dtype
     return list(le_col_names)
     
-def reduce_mem_usage(df, verbose=False):
+def reduce_mem_usage(df, verbose=False, obj_to_cat=True):
     """ 
     copy pastaed from https://www.kaggle.com/code/gemartin/load-data-reduce-memory-usage/notebook.
     iterate through all the columns of a dataframe and modify the data type
@@ -169,7 +169,8 @@ def reduce_mem_usage(df, verbose=False):
                 else:
                     df[col] = df[col].astype(np.float64)
         else:
-            df[col] = df[col].astype('category')
+            if obj_to_cat:
+                df[col] = df[col].astype('category')
 
     end_mem = df.memory_usage().sum() / 1024**2
     if verbose:
