@@ -247,7 +247,7 @@ class Upcaster:
                 if df[col].dtype.name != 'int64':
                     df[col] = df[col].astype('int64')
             else:
-                raise exception(f'{col} is neither `int` nor `float`.  It is {df[col].dtype.name}.')
+                raise Exception(f'{col} is neither `int` nor `float`.  It is {df[col].dtype.name}.')
         self.cols= cols
         
     def revert(self, df):
