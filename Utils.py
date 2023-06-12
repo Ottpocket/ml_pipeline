@@ -260,6 +260,49 @@ class Upcaster:
             else:
                 df[col] = df[col].astype(self.dtype_dict[col])
 
+
+def target_encoder(feat, target, stats, train, test, C=10):
+    '''
+    In-place adds target encodings in a Bayesian manner
+    
+    ARGUMENTS
+    ---------------------
+    feat: (col of df) high cardinality feature to be encoded with `target`
+    target: (col of df) the column to encode into the `feat` column
+    stats: (list of pd.agg compatible statistics) statistics with which to 
+            encode the `target` into the `feat`
+    train: (pd.DataFrame) train data with both `feat` and `target` columns
+    test: (pd.DataFrame) test data with `feat` column.
+    C: (float) weight of the global statistic.
+    
+    OUTPUTS
+    -----------------------
+    1) This inplace modifies both the train and test dataframes to include
+        the new encoded columns. 
+    2) This outputs the names of those new columns.
+    '''
+
+    #Getting data
+    group_by = train.groupby(feat)
+    feat_size = pd.DataFrame(group_by.size(), columns=[target])
+    feat_stats = group_by.agg({target:stats})
+    feat_stats.columns = [col[1] for col in feat_stats.columns]
+    global_stats = train.agg({target:stats}).T.values
+
+    #Creating encoded statistics 
+    stat_df = (feat_size.values * feat_stats + C * global_stats)/(feat_size.values + C)
+    
+    #Adding the encoded columns 
+    cols = []
+    for stat in stats:
+        enc_col_name = feat + '_' + stat
+        cols.append(enc_col_name)
+        for df in [train, test]:
+            df[enc_col_name] = df[feat].map(stat_df[stat])
+    
+    return cols                
+                
+                
 def xval(feats, train, metric, model, target, n_splits=5, test=None, extra = None, verbose=False):
     '''
     Crossvalidates the data using kfolds.  If test data provided, gives the test predictions
