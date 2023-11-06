@@ -2,7 +2,7 @@
 Utilities for record keeper classes
 """
 
-def print_block(heading, body=None, size = 'small'):
+def print_block(heading, metric=None, time= None, size = 'small'):
     """ prints out a block of text enclosed in *s 
     
     ARGUMENTS
@@ -17,6 +17,7 @@ def print_block(heading, body=None, size = 'small'):
         mini_line = '******************************************'
     elif size == 'small':
         line = '******************'
+        mini_line = '********'
     else:
         msg = f"""
         ERROR: `size` arg must be either `big` or `small`. Received:
@@ -26,8 +27,11 @@ def print_block(heading, body=None, size = 'small'):
 
     print(line)
     print(heading)
-    if body is not None:
+    if metric is not None:
         print(mini_line)
-        print(body)
+        print(metric)
+    if time is not None:
+        print(mini_line)
+        print(f'Time: {time}')
     print(line)
     

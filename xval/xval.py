@@ -1,7 +1,6 @@
 """
 Splits data to be ingested by models
 """
-
 from abc import ABC, abstractmethod
 from ml_pipeline.record_keeper.record_keeper import RecordKeeper
 
@@ -36,13 +35,13 @@ class XVal():
         """ `N` run `K` fold crossval process """
 
         #runs 
-        for run_num, seed in enumerate(self.runs):
-            self.record_keeper.run_start(run_num)
+        for seed in self.runs:
+            self.record_keeper.run_start()
             self.split_mechanism(n_splits=self.folds, random_state = seed)
             
-            for fold_num, (tr_idx, val_idx) in enumerate(self.split_mechanism.split(train)):
-                self.record_keeper.fold_start(fold_num)
-                self.cross_validate_fold(model, metric, train_data, test_data)
+            for tr_idx, val_idx in self.split_mechanism.split(train):
+                self.record_keeper.fold_start()
+                self.cross_validate_fold(model, metric, train_data, tr_idx, val_idx, test_data)
                 self.record_keeper.fold_end()
 
     def cross_validate_fold(self, 
@@ -58,18 +57,13 @@ class XVal():
         Note: generating the data for the loop occurs elsewhere
         """
         #Initializing the fold
-        record_keeper.fold_start()
         model.init()
         train_data.set_idx(train = tr_idx, val = val_idx)
 
         #training 
-        record_keeper.train_start()
         self.oof = model.fit(train_data) #work on this
         score = metric(train_data, self.oof)
-        record_keeper.train_end()
 
         #predicting
         if test_data is not None:
-            record_keeper.pred_start()
             self.preds = model.predict(test_pipeline)
-            record_keeper.pred_end()
