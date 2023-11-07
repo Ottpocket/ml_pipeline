@@ -38,6 +38,15 @@ class DataSet(ABC):
         """ returns data for training a model on a fold"""
         return self.__get_data__(self.tr_idx)
     
+    def get_shape(data:str):
+        """ returns the shape of particular bit of data """
+        if data == 'train':
+            return self.train.shape
+        elif data == 'test':
+            return self.test.shape
+        else:
+            raise Exception(f'`data` must be `test` or `train`.  Given {data}')
+
     def get_val_data(self):
         """ returns data for validating a model on a fold"""
         return self.__get_data__(self.val_idx)

@@ -12,6 +12,7 @@ class RecordKeeper(ABC):
 
         self.run_tot_time = 0.
         self.fold_tot_time = 0.
+        self.score = []
 
     def fold_start(self):
         """ called at xval fold start """
@@ -27,10 +28,11 @@ class RecordKeeper(ABC):
         """ called at xval run start """
         self.run_tot_time = 0.
 
-    def run_end(self):
+    def run_end(self, score):
         """ called at xval run end """
         self.run_tot_time = time.time() - self.run_start_time
-    
+        self.score.append(score)
+
     def get_run_time(self):
         return self.run_tot_time
     
@@ -40,7 +42,7 @@ class RecordKeeper(ABC):
 class RecordKeeperPrint(RecordKeeper):
     """ Prints start of folds and runs.
 
-    Uses `metric` objecets to print metric information. 
+    Uses `metric` objects to print metric information. 
     """
 
     def __init__(self):
@@ -52,6 +54,7 @@ class RecordKeeperPrint(RecordKeeper):
         """ called at xval fold start """
         print_block(heading= f'Starting fold {self.fold}',
                             size='small')
+        super().fold_start()
 
     def fold_end(self, metric=None):
         """ called at xval fold end """
@@ -60,7 +63,8 @@ class RecordKeeperPrint(RecordKeeper):
                             metric = metric,
                             time = self.get_fold_time(),
                             size='small')
-        self.fold +=1   
+        self.fold +=1  
+         
 
     def run_start(self):
         """ called at xval run start """
