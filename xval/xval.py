@@ -3,7 +3,7 @@ Splits data to be ingested by models
 """
 from abc import ABC, abstractmethod
 from ml_pipeline.record_keeper.record_keeper import RecordKeeper
-
+from ml_pipeline.data_set.data_set import DataSet
 
 class XVal():
     """ Completes an `N` run `K` fold crossval process
@@ -13,9 +13,10 @@ class XVal():
 
     def __init__(self, 
                  split_mechanism, 
+                 data: DataSet,
                  record_keeper:RecordKeeper,
                  runs:list=[42], 
-                 folds:int=5, ):
+                 folds:int=5):
         """ 
         ARGUMENTS
         -----------------
@@ -31,7 +32,7 @@ class XVal():
         self.split_mechanism = split_mechanism
         self.record_keeper = record_keeper
 
-    def cross_validate(self, model, metric, train_data, test_data=None):
+    def cross_validate(self, model, metric, data:DataSet):
         """ `N` run `K` fold crossval process """
 
         #runs 
@@ -39,18 +40,16 @@ class XVal():
             self.record_keeper.run_start()
             self.split_mechanism(n_splits=self.folds, random_state = seed)
             
-            for tr_idx, val_idx in self.split_mechanism.split(train):
+            for tr_idx, val_idx in self.split_mechanism.split(data.get_index()):
                 self.record_keeper.fold_start()
-                self.cross_validate_fold(model, metric, train_data, tr_idx, val_idx, test_data)
+                train_data.set_idx(tr_idx = tr_idx, val_idx = val_idx)
+                self.cross_validate_fold(model, metric, data)
                 self.record_keeper.fold_end()
 
     def cross_validate_fold(self, 
                        model: ModelDecorator, 
                        metric: Metric,
-                       train_data: DataPipeline,
-                       tr_idx: list,
-                       val_idx: list,
-                       test_data: DataPipeline=None,
+                       data: DataSet
                        ):
         """ the logic for a single fold in a run of the crossval  
         
@@ -58,12 +57,12 @@ class XVal():
         """
         #Initializing the fold
         model.init()
-        train_data.set_idx(train = tr_idx, val = val_idx)
 
         #training 
-        self.oof = model.fit(train_data) #work on this
-        score = metric(train_data, self.oof)
+        model.fit(data.get_fit_data()) 
+        self.oof = model.validate(data.get_val_data())
+        score = metric(self.oof, data.get_fold_targets() )
 
         #predicting
-        if test_data is not None:
-            self.preds = model.predict(test_pipeline)
+        if data.has_test_data():
+            self.preds = model.predict(data.get_test_data())
