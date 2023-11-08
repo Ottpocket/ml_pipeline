@@ -5,6 +5,8 @@ import numpy as np
 from abc import ABC, abstractmethod
 from ml_pipeline.record_keeper.record_keeper import RecordKeeper
 from ml_pipeline.data_set.data_set import DataSet
+from ml_pipeline.model_decorator.model_decorator import ModelDecorator
+from ml_pipeline.split_mechanism.split_mechanism import SplitMechanism
 
 class XVal():
     """ Completes an `N` run `K` fold crossval process
@@ -12,10 +14,9 @@ class XVal():
 
     """
 
-    def __init__(self, 
-                 split_mechanism, 
-                 data: DataSet,
+    def __init__(self,  
                  record_keeper:RecordKeeper,
+                 split_mechanism:SplitMechanism = None,
                  runs:list=[42], 
                  folds:int=5):
         """ 
@@ -35,7 +36,9 @@ class XVal():
         self.oof = []
         self.preds = []
 
-    def cross_validate(self, model, metric, data:DataSet):
+    def cross_validate(self, model:ModelDecorator, 
+                       metric, 
+                       data:DataSet):
         """ `N` run `K` fold crossval process """
         self.oof = np.zeros(shape=(data.get_shape('train')[0], self.runs))
         if data.has_test():
@@ -62,11 +65,11 @@ class XVal():
         Note: generating the data for the loop occurs elsewhere
         """
         #Initializing the fold
-        model.init()
+        model.initialize_fold()
 
         #training 
         model.fit(data.get_fit_data()) 
-        self.oof[data.val_idx, self.run] = model.validate(data.get_val_data())
+        self.oof[data.val_idx, self.run] = model.predict(data.get_val_data())
         score = metric(self.oof[data.val_idx, self.run], data.get_fold_targets() )
 
         #predicting
