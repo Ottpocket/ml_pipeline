@@ -4,40 +4,69 @@ Basic means of tracking what is going on in the crossval process
 import time
 from abc import ABC
 from ml_pipeline.record_keeper.__utils__ import print_block
-class RecordKeeper(ABC):
+class RecordKeeper:
     """ Base record keeping device: Only Keeps time elapsed. """
     def __init__(self):
+        """ """
+        #keep track of how long a fold/run takes
         self.run_start_time = time.time()
         self.fold_start_time = time.time() 
 
-        self.run_tot_time = 0.
-        self.fold_tot_time = 0.
-        self.score = []
+        self.fold_scores = {} #dict w/ keys as metric and values as scores
+        self.run_scores = {} #dict w/ keys as metrics as values as scores
 
+    def __add_metrics_to_records__(self, records, metrics):
+        """ updates either `fold_scores` or    `run_scores` with new values"""
+        
+        #Updating the records
+        for metric_name, metric_value in metrics.items():
+            if metric_name in records.keys():
+                records[metric_name].append(metric_value)
+            else:
+                records[metric_name] = [metric_value]
+        
+        #Checking to make sure the records all are identical length
+        record_lengths = {}
+        all_same_length = True
+        lengths = -1
+        for metric_name in records.keys():
+            curr_len = len(records[metric_name])
+            record_lengths[metric_name] = curr_len
+            #initializing
+            if lengths == -1:
+                lengths = curr_len
+            
+            #ensuring all metrics have same # of values
+            else:
+                if curr_len != lengths:
+                    all_same_length = False
+        
+        #One metric has more values than others.  An error:
+        if not all_same_length:
+            msg = f'''
+            ERROR: some metrics have differing number of observations.  metrics:
+            {record_lengths}
+            '''
+            raise Exception(msg)
+        
     def fold_start(self):
         """ called at xval fold start """
-        self.fold_tot_time = 0.
         self.fold_start_time = time.time()
-
     
-    def fold_end(self):
-        """ called at xval fold end """
-        self.fold_tot_time = time.time() - self.fold_start_time
+    def fold_end(self, fold_scores):
+        """ called at xval fold end.  records metric scores"""
+        fold_scores['time'] = time.time() - self.fold_start_time
+        self.__add_metrics_to_records__(records=self.fold_scores, metrics = fold_scores)
 
     def run_start(self):
         """ called at xval run start """
-        self.run_tot_time = 0.
+        self.run_start_time = time.time()
 
-    def run_end(self, score):
+    def run_end(self, run_score):
         """ called at xval run end """
-        self.run_tot_time = time.time() - self.run_start_time
-        self.score.append(score)
+        run_score['time'] = time.time() - self.run_start_time
+        self.__add_metrics_to_records__(records=self.fold_scores, metrics = run_score)
 
-    def get_run_time(self):
-        return self.run_tot_time
-    
-    def get_fold_time(self):
-        return self.fold_tot_time
 
 class RecordKeeperPrint(RecordKeeper):
     """ Prints start of folds and runs.

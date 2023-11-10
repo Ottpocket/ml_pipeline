@@ -51,6 +51,9 @@ class DataSet(ABC):
         """ returns data for validating a model on a fold"""
         return self.__get_data__(self.val_idx)
     
+    @abstractmethod
+    def get_targets(self)
+    
     @abstract
     def get_test_data(self):
         """ returns test data for predicting """
@@ -126,6 +129,10 @@ class DataSetPandas(DataSet):
         """ gets the train index"""
         return list(self.train.index)
     
+    def get_targets(self):
+        ''' returns all targets'''
+        return self.train[self.target]
+
     def get_test_data(self):
         """ returns test data for predicting """
         return self.test[self.features]

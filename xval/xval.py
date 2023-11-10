@@ -7,15 +7,16 @@ from ml_pipeline.record_keeper.record_keeper import RecordKeeper
 from ml_pipeline.data_set.data_set import DataSet
 from ml_pipeline.model_decorator.model_decorator import ModelDecorator
 from ml_pipeline.split_mechanism.split_mechanism import SplitMechanism
+from ml_pipeline.metric.metric import MetricInterface, MetricInterfaceTest
 
 class XVal():
     """ Completes an `N` run `K` fold crossval process
 
 
     """
-
     def __init__(self,  
                  record_keeper:RecordKeeper,
+                 metric_interface:MetricInterface=MetricInterfaceTest,
                  split_mechanism:SplitMechanism = None,
                  runs:list=[42], 
                  folds:int=5):
@@ -33,12 +34,11 @@ class XVal():
         self.folds = folds      
         self.split_mechanism = split_mechanism
         self.record_keeper = record_keeper
+        self.metric_interface = metric_interface
         self.oof = []
         self.preds = []
 
-    def cross_validate(self, model:ModelDecorator, 
-                       metric, 
-                       data:DataSet):
+    def cross_validate(self, model:ModelDecorator, data:DataSet):
         """ `N` run `K` fold crossval process """
         self.oof = np.zeros(shape=(data.get_shape('train')[0], self.runs))
         if data.has_test():
@@ -52,12 +52,15 @@ class XVal():
             for tr_idx, val_idx in self.split_mechanism.split(data.get_index()):
                 self.record_keeper.fold_start()
                 data.set_idx(tr_idx = tr_idx, val_idx = val_idx)
-                score = self.cross_validate_fold(model, metric, data)
-                self.record_keeper.fold_end(score)
+                score_dict = self.cross_validate_fold(model, data)
+                self.record_keeper.fold_end(score_dict)
+
+            run_score = metric.score(self.oof[:, self.run], data.get_targets() )
+            self.record_keeper.run_end(score=run_score)         
+
 
     def cross_validate_fold(self, 
                        model: ModelDecorator, 
-                       metric: Metric,
                        data: DataSet
                        ):
         """ the logic for a single fold in a run of the crossval  
@@ -70,8 +73,10 @@ class XVal():
         #training 
         model.fit(data.get_fit_data()) 
         self.oof[data.val_idx, self.run] = model.predict(data.get_val_data())
-        score = metric(self.oof[data.val_idx, self.run], data.get_fold_targets() )
+        score_dict = self.metric.score(self.oof[data.val_idx, self.run], data.get_fold_targets() )
 
         #predicting
         if data.has_test_data():
             self.preds[:, self.runs] += (model.predict(data.get_test_data()) / self.runs)
+
+        return score_dict
