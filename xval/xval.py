@@ -55,8 +55,8 @@ class XVal():
                 score_dict = self.cross_validate_fold(model, data)
                 self.record_keeper.fold_end(score_dict)
 
-            run_score = metric.score(self.oof[:, self.run], data.get_targets() )
-            self.record_keeper.run_end(score=run_score)         
+            run_score_dict = self.metric.score(self.oof[:, self.run], data.get_targets() )
+            self.record_keeper.run_end(score=run_score_dict)         
 
 
     def cross_validate_fold(self, 
