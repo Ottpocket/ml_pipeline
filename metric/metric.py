@@ -1,7 +1,7 @@
 """
 Wrapper class for metrics
 """
-
+from sklearn.metrics import accuracy_score
 class MetricInterface:
     """ holds a dict of metrics to be ran on data """
 
@@ -26,3 +26,8 @@ class MetricInterfaceTest(MetricInterface):
         
         metric_dict = {'placeholder': placeholder}
         super().__init__(metric_dict=metric_dict)
+
+
+class MetricInterfaceAcc(MetricInterface):
+    def __init__(self):
+        super().__init__({'acc':accuracy_score})

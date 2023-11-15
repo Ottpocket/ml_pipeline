@@ -5,7 +5,7 @@ data
 import pandas as pd
 from abc import ABC, abstractmethod
 from typing import Union
-from __utils__ import check_for_features
+from ml_pipeline.data.__utils__ import check_for_features
 
 class DataSet(ABC):
     """ abstract class """
@@ -38,7 +38,7 @@ class DataSet(ABC):
         """ returns data for training a model on a fold"""
         return self.__get_data__(self.tr_idx)
     
-    def get_shape(data:str):
+    def get_shape(self, data:str):
         """ returns the shape of particular bit of data """
         if data == 'train':
             return self.train.shape
@@ -52,9 +52,10 @@ class DataSet(ABC):
         return self.__get_data__(self.val_idx)
     
     @abstractmethod
-    def get_targets(self)
+    def get_targets(self):
+        pass
     
-    @abstract
+    @abstractmethod
     def get_test_data(self):
         """ returns test data for predicting """
         return []
@@ -99,7 +100,8 @@ class DataSetPandas(DataSet):
         }
         for name, df in df_dict.items():
             if df is not None:
-                check_for_features(df, [self.target], name = name)            
+                if name != 'test':
+                    check_for_features(df, [self.target], name = name)            
                 check_for_features(df, self.features, name = name)                    
 
 

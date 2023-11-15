@@ -2,7 +2,7 @@
 Basic means of tracking what is going on in the crossval process
 """
 import time
-from abc import ABC
+from sklearn.metrics import accuracy_score
 from ml_pipeline.record_keeper.__utils__ import print_block
 class RecordKeeper:
     """ Base record keeping device: Only Keeps time elapsed. """
@@ -68,6 +68,9 @@ class RecordKeeper:
         self.__add_metrics_to_records__(records=self.fold_scores, metrics = run_score)
 
 
+
+        
+        
 class RecordKeeperPrint(RecordKeeper):
     """ Prints start of folds and runs.
 

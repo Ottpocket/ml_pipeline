@@ -4,7 +4,7 @@ Splits data to be ingested by models
 import numpy as np
 from abc import ABC, abstractmethod
 from ml_pipeline.record_keeper.record_keeper import RecordKeeper
-from ml_pipeline.data_set.data_set import DataSet
+from ml_pipeline.data.data_set import DataSet
 from ml_pipeline.model_decorator.model_decorator import ModelDecorator
 from ml_pipeline.split_mechanism.split_mechanism import SplitMechanism
 from ml_pipeline.metric.metric import MetricInterface, MetricInterfaceTest
@@ -40,12 +40,12 @@ class XVal():
 
     def cross_validate(self, model:ModelDecorator, data:DataSet):
         """ `N` run `K` fold crossval process """
-        self.oof = np.zeros(shape=(data.get_shape('train')[0], self.runs))
-        if data.has_test():
-            self.preds = np.zeros(shape=(data.get_shape('test')[0], self.runs))
+        self.oof = np.zeros(shape=(data.get_shape('train')[0], len(self.runs) ))
+        if data.has_test_data():
+            self.preds = np.zeros(shape=(data.get_shape('test')[0], len(self.runs) ) ) 
 
         #runs 
-        for seed in self.runs:
+        for run_num, seed in enumerate(self.runs):
             self.record_keeper.run_start()
             self.split_mechanism(n_splits=self.folds, random_state = seed)
             
@@ -55,7 +55,7 @@ class XVal():
                 score_dict = self.cross_validate_fold(model, data)
                 self.record_keeper.fold_end(score_dict)
 
-            run_score_dict = self.metric.score(self.oof[:, self.run], data.get_targets() )
+            run_score_dict = self.metric.score(self.oof[:, run_num], data.get_targets() )
             self.record_keeper.run_end(score=run_score_dict)         
 
 
