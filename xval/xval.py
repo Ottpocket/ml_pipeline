@@ -47,9 +47,9 @@ class XVal():
         #runs 
         for run_num, seed in enumerate(self.runs):
             self.record_keeper.run_start()
-            self.split_mechanism(n_splits=self.folds, random_state = seed)
+            splitter = self.split_mechanism(n_splits=self.folds, shuffle=True, random_state = seed)
             
-            for tr_idx, val_idx in self.split_mechanism.split(data.get_index()):
+            for tr_idx, val_idx in splitter.split(data.get_index()):
                 self.record_keeper.fold_start()
                 data.set_idx(tr_idx = tr_idx, val_idx = val_idx)
                 score_dict = self.cross_validate_fold(model, data)
