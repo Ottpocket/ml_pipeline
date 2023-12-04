@@ -58,5 +58,5 @@ class OutputOnesModel:
     def predict(self, data):
         return np.ones(shape= (data.shape[0],) )
     
-    def save(self, **kwargs):
+    def save(self, path, **kwargs):
         pass

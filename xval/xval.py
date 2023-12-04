@@ -52,7 +52,7 @@ class XVal():
             for tr_idx, val_idx in splitter.split(data.get_index()):
                 self.record_keeper.fold_start()
                 data.set_index(tr_idx = tr_idx, val_idx = val_idx)
-                score_dict = self.cross_validate_fold(model, data)
+                score_dict = self.cross_validate_fold(model, data, run_num)
                 self.record_keeper.fold_end(score_dict)
 
             run_score_dict = self.metric.score(self.oof[:, run_num], data.get_targets() )
@@ -61,7 +61,8 @@ class XVal():
 
     def cross_validate_fold(self, 
                        model: ModelDecorator, 
-                       data: DataSet
+                       data: DataSet,
+                       run_num
                        ):
         """ the logic for a single fold in a run of the crossval  
         
@@ -76,8 +77,8 @@ class XVal():
         print(data2[0].shape)
         print(data2[1].shape)
         model.fit(data.get_fit_data()) 
-        self.oof[data.val_idx, self.run] = model.predict(data.get_val_data())
-        score_dict = self.metric.score(self.oof[data.val_idx, self.run], data.get_fold_targets() )
+        self.oof[data.val_idx, run_num] = model.predict(data.get_val_data()[0])
+        score_dict = self.metric.score(self.oof[data.val_idx, run_num], data.get_fold_targets() )
 
         #predicting
         if data.has_test_data():
