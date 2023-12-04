@@ -51,7 +51,7 @@ class XVal():
             
             for tr_idx, val_idx in splitter.split(data.get_index()):
                 self.record_keeper.fold_start()
-                data.set_idx(tr_idx = tr_idx, val_idx = val_idx)
+                data.set_index(tr_idx = tr_idx, val_idx = val_idx)
                 score_dict = self.cross_validate_fold(model, data)
                 self.record_keeper.fold_end(score_dict)
 
@@ -70,7 +70,11 @@ class XVal():
         #Initializing the fold
         model.initialize_fold()
 
-        #training 
+        #training
+        data2 = data.get_val_data() 
+        print(len(data2))
+        print(data2[0].shape)
+        print(data2[1].shape)
         model.fit(data.get_fit_data()) 
         self.oof[data.val_idx, self.run] = model.predict(data.get_val_data())
         score_dict = self.metric.score(self.oof[data.val_idx, self.run], data.get_fold_targets() )

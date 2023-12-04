@@ -4,34 +4,55 @@ A decorator class for all models being ran by xval
 import numpy as np #only for dumb model
 
 class ModelDecorator:
-    """ generic decorator for models
+    """ Makes a model play nice with XVal class
     
+    Takes in a model constructor, instantiates a new model each fold, 
+    and saves it after training.  This class is intended to be used inside 
+    the XVal.cross_validate method.
+    
+    NOTE
+    --------------------------
     Saves models in `save_dir` as `model_1`, `model_2` etc...
+
+    USAGE
+    -----------------------
+    1) decorating LGBM
+        args = {lgbm_param_1:100, lgbm_param_2: 0.56}
+        model = ModelDecorator(LGBMRegressor, model_args = args)
+
+    PARAMETERS
+    --------------------------------
+
+     
     """
-    def __init__(self, model, save_dir = 'saved_models'):
-        self.model = model
-        self.save_path = save_dir
+    def __init__(self, model_constructor, save_dir = 'saved_models', model_args={}):
+        self.model_constructor = model_constructor
+        self.save_dir = save_dir
         self.fold_num = 0
+        self.model_args= model_args
 
     def initialize_fold(self):
-        pass
+        self.model_instance= self.model_constructor(**self.model_args)
 
     def fit(self, data):
         self.fold_num += 1
         X, y = data
-        self.model.fit(X, y)
+        self.model_instance.fit(X, y)
         self.save()
 
     def save(self):
-        save_path = f'{save_path}/model_{self.fold_num}'
-        self.model.save(save_path)
+        save_path = f'{self.save_dir}/model_{self.fold_num}'
+        self.model_instance.save(save_path)
 
     def predict(self, data):
-        return self.model.predict(data)
+        return self.model_instance.predict(data)
     
 class OutputOnesModel:
-    ''' a `model` that only predicts the value 1.'''
-    def fit(self, **kwargs):
+    ''' a `model` that only predicts the value 1.
+    
+    Intended only as a dummy model for debugging/testing stuff
+    '''
+    def fit(self, X, y):
         pass
     
     def predict(self, data):
@@ -39,8 +60,3 @@ class OutputOnesModel:
     
     def save(self, **kwargs):
         pass
-        
-class ModelDecoratorOnes(ModelDecorator):
-    """ decorator for ones model """
-    def __init__(self):
-        super().__init__(model=OutputOnesModel)

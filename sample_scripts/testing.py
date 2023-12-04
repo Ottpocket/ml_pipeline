@@ -9,7 +9,7 @@ sys.path.append('../..')
 from ml_pipeline.xval.xval import XVal
 from ml_pipeline.record_keeper.record_keeper import RecordKeeper
 from ml_pipeline.metric.metric import MetricInterfaceAcc
-from ml_pipeline.model_decorator.model_decorator import ModelDecoratorOnes
+from ml_pipeline.model_decorator.model_decorator import ModelDecorator
 from ml_pipeline.data.data_set import DataSetPandas
 
 class XValTestSubclass(XVal):
@@ -36,7 +36,20 @@ data = DataSetPandas(train, target='target',
                      features = ['feat1', 'feat2'],
                      ancillary_train= ancillary_train)
 
+#Preparing dummy model
+class OutputOnesModel:
+    ''' a `model` that only predicts the value 1.'''
+    def fit(self, X, y):
+        pass
+    
+    def predict(self, data):
+        return np.ones(shape= (data.shape[0],) )
+    
+    def save(self, **kwargs):
+        pass
+model = ModelDecorator(OutputOnesModel)
+
+
 #Using XVal
 xval = XValTestSubclass()
-model = ModelDecoratorOnes()
 xval.cross_validate(model=model, data=data)
