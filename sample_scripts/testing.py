@@ -8,7 +8,7 @@ import sys
 sys.path.append('../..')
 from ml_pipeline.xval.xval import XVal
 from ml_pipeline.record_keeper.record_keeper import RecordKeeper
-from ml_pipeline.metric.metric import MetricInterfaceAcc
+from ml_pipeline.metric.metric import MetricInterfaceMAE
 from ml_pipeline.model_decorator.model_decorator import ModelDecorator, OutputOnesModel
 from ml_pipeline.data.data_set import DataSetPandas
 
@@ -17,7 +17,7 @@ class XValTestSubclass(XVal):
 
     def __init__(self):
         record_keeper = RecordKeeper()
-        metric_interface = MetricInterfaceAcc() 
+        metric_interface = MetricInterfaceMAE() 
         split_mechanism = KFold
         super().__init__(  
                  record_keeper,

@@ -55,7 +55,7 @@ class XVal():
                 score_dict = self.cross_validate_fold(model, data, run_num)
                 self.record_keeper.fold_end(score_dict)
 
-            run_score_dict = self.metric.score(self.oof[:, run_num], data.get_targets() )
+            run_score_dict = self.metric_interface.score(self.oof[:, run_num], data.get_targets() )
             self.record_keeper.run_end(score=run_score_dict)         
 
 
@@ -78,7 +78,7 @@ class XVal():
         print(data2[1].shape)
         model.fit(data.get_fit_data()) 
         self.oof[data.val_idx, run_num] = model.predict(data.get_val_data()[0])
-        score_dict = self.metric.score(self.oof[data.val_idx, run_num], data.get_fold_targets() )
+        score_dict = self.metric_interface.score(self.oof[data.val_idx, run_num], data.get_fold_targets() )
 
         #predicting
         if data.has_test_data():

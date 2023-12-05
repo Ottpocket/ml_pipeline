@@ -36,7 +36,7 @@ class DataSet(ABC):
     
     def get_fit_data(self):
         """ returns data for training a model on a fold"""
-        return self.__get_data__(self.tr_idx)
+        return self.__get_data__(self.tr_idx, train=True)
     
     def get_shape(self, data:str):
         """ returns the shape of particular bit of data """
@@ -49,7 +49,7 @@ class DataSet(ABC):
 
     def get_val_data(self):
         """ returns data for validating a model on a fold"""
-        return self.__get_data__(self.val_idx)
+        return self.__get_data__(self.val_idx, train=False)
     
     @abstractmethod
     def get_targets(self):
@@ -61,7 +61,15 @@ class DataSet(ABC):
         return []
     
     @abstractmethod
-    def __get_data__(self, idx):
+    def __get_data__(self, idx_, train:bool):
+        """
+        secret method to return data.
+
+        PARAMETERS
+        -----------------
+        idx: indices passed
+        train: (bool) will this be for training data 
+        """
         return []
     
     def has_test_data(self):
@@ -105,12 +113,14 @@ class DataSetPandas(DataSet):
                 check_for_features(df, self.features, name = name)                    
 
 
-    def __get_data__(self, idx):
+    def __get_data__(self, idx, train):
         """ gets data from train dataset"""
         features = self.features
         target = self.target
 
-        if self.ancillary_train is None:
+        #If you are in val or test, only use indices
+        #If you are training you can use ancillary data as well
+        if (self.ancillary_train is None) or (not train):
             return self.train[features].iloc[idx], self.train[target].iloc[idx]
         else:
             tr_fold = pd.concat([
