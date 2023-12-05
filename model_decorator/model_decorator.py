@@ -2,6 +2,8 @@
 A decorator class for all models being ran by xval
 """
 import numpy as np #only for dumb model
+import joblib 
+import os
 
 class ModelDecorator:
     """ Makes a model play nice with XVal class
@@ -30,6 +32,7 @@ class ModelDecorator:
         self.save_dir = save_dir
         self.fold_num = 0
         self.model_args= model_args
+        self.run_num = 0
 
     def initialize_fold(self):
         self.model_instance= self.model_constructor(**self.model_args)
@@ -41,11 +44,18 @@ class ModelDecorator:
         self.save()
 
     def save(self):
-        save_path = f'{self.save_dir}/model_{self.fold_num}'
-        self.model_instance.save(save_path)
+        save_path = f'{self.save_dir}/model_{self.run_num}_{self.fold_num}.joblib'
+        if not os.path.exists(self.save_dir):
+            os.makedirs(self.save_dir)
+
+        joblib.dump(self.model_instance, save_path) 
+        #load it again via model = joblib.load(save_path)
 
     def predict(self, data):
         return self.model_instance.predict(data)
+    
+    def update_run(self):
+        self.run_num +=1
     
 class OutputOnesModel:
     ''' a `model` that only predicts the value 1.

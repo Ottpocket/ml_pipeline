@@ -48,15 +48,18 @@ class XVal():
         for run_num, seed in enumerate(self.runs):
             self.record_keeper.run_start()
             splitter = self.split_mechanism(n_splits=self.folds, shuffle=True, random_state = seed)
-            
+            model.update_run()
+            print(f'Run: {run_num}')
+
             for tr_idx, val_idx in splitter.split(data.get_index()):
+                print('fold, ', sep=' ')
                 self.record_keeper.fold_start()
                 data.set_index(tr_idx = tr_idx, val_idx = val_idx)
                 score_dict = self.cross_validate_fold(model, data, run_num)
                 self.record_keeper.fold_end(score_dict)
 
             run_score_dict = self.metric_interface.score(self.oof[:, run_num], data.get_targets() )
-            self.record_keeper.run_end(score=run_score_dict)         
+            self.record_keeper.run_end(run_score=run_score_dict)         
 
 
     def cross_validate_fold(self, 
@@ -72,16 +75,17 @@ class XVal():
         model.initialize_fold()
 
         #training
-        data2 = data.get_val_data() 
-        print(len(data2))
-        print(data2[0].shape)
-        print(data2[1].shape)
         model.fit(data.get_fit_data()) 
         self.oof[data.val_idx, run_num] = model.predict(data.get_val_data()[0])
         score_dict = self.metric_interface.score(self.oof[data.val_idx, run_num], data.get_fold_targets() )
 
         #predicting
         if data.has_test_data():
-            self.preds[:, self.runs] += (model.predict(data.get_test_data()) / self.runs)
+            self.preds[:, run_num] += (model.predict(data.get_test_data()) / (len(self.runs) * self.folds))
 
         return score_dict
+    
+    def get_run_scores(self):
+        return self.record_keeper.get_run_scores()
+    def get_fold_scores(self):
+        return self.record_keeper.get_fold_scores()

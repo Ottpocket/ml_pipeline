@@ -58,6 +58,12 @@ class RecordKeeper:
         fold_scores['time'] = time.time() - self.fold_start_time
         self.__add_metrics_to_records__(records=self.fold_scores, metrics = fold_scores)
 
+    def get_fold_scores(self):
+        return self.fold_scores
+    
+    def get_run_scores(self):
+        return self.run_scores
+    
     def run_start(self):
         """ called at xval run start """
         self.run_start_time = time.time()
@@ -65,7 +71,7 @@ class RecordKeeper:
     def run_end(self, run_score):
         """ called at xval run end """
         run_score['time'] = time.time() - self.run_start_time
-        self.__add_metrics_to_records__(records=self.fold_scores, metrics = run_score)
+        self.__add_metrics_to_records__(records=self.run_scores, metrics = run_score)
 
 
 
