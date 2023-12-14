@@ -38,6 +38,15 @@ class DataSet(ABC):
         """ returns data for training a model on a fold"""
         return self.__get_data__(self.tr_idx, train=True)
     
+    @abstractmethod
+    def get_num_targets(self):
+        """ returns the count of the targets in the data
+        
+        If data is categorical, it is number of categories.
+        If numeric, this is just 1.
+        """
+        return -99
+
     def get_shape(self, data:str):
         """ returns the shape of particular bit of data """
         if data == 'train':
@@ -141,6 +150,15 @@ class DataSetPandas(DataSet):
         """ gets the train index"""
         return list(self.train.index)
     
+    def get_num_targets(self):
+        target_dtype = self.train[self.target].dtype.name
+        if target_dtype not in ['category', 'object']:
+            return 1
+        elif self.train[self.target].dtype.name == 'category':
+            return len(self.train[self.target].cat.categories)
+        else:
+            return self.train[self.target].nunique()
+
     def get_targets(self):
         ''' returns all targets'''
         return self.train[self.target]

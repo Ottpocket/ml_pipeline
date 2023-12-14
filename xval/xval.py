@@ -36,16 +36,18 @@ class XVal():
         self.record_keeper = record_keeper
         self.metric_interface = metric_interface
         self.oof = []
-        self.preds = []
+        self.preds = [] #Just a placeholder.  This is a list of {runs} np arrays size {(num_test, num_classes)}
 
     def cross_validate(self, model:ModelDecorator, data:DataSet):
         """ `N` run `K` fold crossval process """
-        self.oof = np.zeros(shape=(data.get_shape('train')[0], len(self.runs) ))
-        if data.has_test_data():
-            self.preds = np.zeros(shape=(data.get_shape('test')[0], len(self.runs) ) ) 
+        self.oof = np.zeros(shape=(data.get_shape('train')[0], len(self.runs) )) 
 
         #runs 
         for run_num, seed in enumerate(self.runs):
+            if data.has_test_data():
+                num_cols = data.get_num_targets()
+                self.preds.append(np.zeros( shape=(data.get_shape('test')[0], num_cols) )) 
+
             self.record_keeper.run_start()
             splitter = self.split_mechanism(n_splits=self.folds, shuffle=True, random_state = seed)
             model.update_run()
@@ -81,7 +83,7 @@ class XVal():
 
         #predicting
         if data.has_test_data():
-            self.preds[:, run_num] += (model.predict(data.get_test_data()) / (len(self.runs) * self.folds))
+            self.preds[-1][:, run_num] += (model.predict(data.get_test_data()) /  self.folds)
 
         return score_dict
     
@@ -89,3 +91,16 @@ class XVal():
         return self.record_keeper.get_run_scores()
     def get_fold_scores(self):
         return self.record_keeper.get_fold_scores()
+    
+def get_predictions(self, raw=True):
+    ''' Returns predictions
+    
+    Arguments
+    --------------------
+    raw: (bool) if True, gives the list of run predictions, 
+                if False, takes the mean across the elements of list 
+    '''
+    if raw:
+        return self.preds
+    else:
+        return sum(self.preds) / len(self.preds)
