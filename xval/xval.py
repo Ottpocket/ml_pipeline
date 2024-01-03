@@ -83,7 +83,9 @@ class XVal():
 
         #predicting
         if data.has_test_data():
-            self.preds[-1][:, run_num] += (model.predict(data.get_test_data()) /  self.folds)
+            reshape_ = self.preds[-1].shape
+            print(f'Prediction shape: {model.predict(data.get_test_data()).shape}')
+            self.preds[-1] += (model.predict(data.get_test_data()).reshape(reshape_) /  self.folds)
 
         return score_dict
     
@@ -91,16 +93,29 @@ class XVal():
         return self.record_keeper.get_run_scores()
     def get_fold_scores(self):
         return self.record_keeper.get_fold_scores()
-    
-def get_predictions(self, raw=True):
-    ''' Returns predictions
-    
-    Arguments
-    --------------------
-    raw: (bool) if True, gives the list of run predictions, 
-                if False, takes the mean across the elements of list 
-    '''
-    if raw:
-        return self.preds
-    else:
-        return sum(self.preds) / len(self.preds)
+    def get_oof(self, raw=True):
+        '''
+        returns the out of fold predictions
+
+        ARGUMENTS
+        ----------------
+        raw:(bool) if true, returns list of run values. 
+                   if False, returns mean of run values
+        '''
+        if raw:
+            return self.oof
+        else:
+            return np.mean(self.oof, axis=1)
+        
+    def get_predictions(self, raw=True):
+        ''' Returns predictions
+        
+        Arguments
+        --------------------
+        raw: (bool) if True, gives the list of run predictions, 
+                    if False, takes the mean across the elements of list 
+        '''
+        if raw:
+            return self.preds
+        else:
+            return np.mean(self.preds, axis=1)

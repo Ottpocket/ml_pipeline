@@ -24,7 +24,7 @@ class XValTestSubclass(XVal):
                  record_keeper,
                  metric_interface,
                  split_mechanism,
-                 runs = [42], 
+                 runs = [42, 43], 
                  folds = 5)
 
 #Loading data
@@ -47,3 +47,5 @@ xval = XValTestSubclass()
 xval.cross_validate(model=model, data=data)
 print(xval.get_run_scores())
 print(xval.get_fold_scores())
+print(xval.get_oof(raw=False))
+print(len(xval.get_oof()))
