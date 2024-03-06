@@ -10,18 +10,32 @@ from ml_pipeline.data import DataSubclass
 #Data Step
 train_data = #load data from source
 test_data = #load test data from source
-train_pipeline = DataSubclass(train_data)
-test_pipeline = DataSubclass(test_data)
+data = DataSubclass(train=train_data, test=test_data, **args)
 
 #Model Step
 model = ModelSubclass()
 
 #Cross validation
-XValSubclass(model=model, train = train_pipeline, test = test_pipeline, **kwargs) #outputs scores and saves models
+XValSubclass()
+XValSubclass.cross_validate(model=model, data=data)
+
+xval.cross_validate(model=model, data=data)
+
+#Getting results
+print(xval.get_run_scores())
+print(xval.get_fold_scores())
+print(xval.get_oof(raw=False))
+print(len(xval.get_oof()))
 ```
 
-## ml_pipeline Overview
+# ml_pipeline Overview
 
 1. xval: takes in data, and performs some type of cross validation.
 2. model: creates models or model decorators that play nice with `xval`
 3. data: decorators for data that ensure it plays nice with xval.
+
+# Roadmap for future Development
+
+1. `xval`: single model/multiple pred columns capabilities.
+2. `xval`: multiple target values/multiple models capabilities
+3. `xval`: multiple metrics on multiple outputs 
