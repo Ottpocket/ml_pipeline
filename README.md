@@ -40,4 +40,4 @@ print(len(xval.get_oof()))
 2. `xval`: multiple target values/multiple models capabilities
 3. `xval`: multiple metrics on multiple outputs 
 
-Specifically, `sample_scripts/test_all.py` is the point of departure for testing the above 3 points in roadmap.  
+Specifically, `sample_scripts/testing/test_all.py` is the point of departure for testing the above 3 points in roadmap.  **Current TODO**: finish `sample_scripts/testing/1_simple.py`.
